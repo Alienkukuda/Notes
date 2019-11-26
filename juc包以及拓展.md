@@ -627,4 +627,5 @@ public void processData() {
 }
 ```
 
-在上述代码中，当数据发生变化后，update变量（布尔volatile类型）被设置为false。
+在上述代码中，当数据发生变化后，update变量（布尔volatile类型）被设置为false。最后提一下，JDK1.8提出的`StampedLock`优化了读写锁，[康康源码](https://juejin.im/entry/5b28a4c46fb9a00e8a3e534a)
+
