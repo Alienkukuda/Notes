@@ -24,15 +24,29 @@ IoC Container的第二个好处是：**我们在创建实例的时候不需要�
 
 而IoC Container在进行这个工作的时候是反过来的，它先从最上层开始往下找依赖关系，到达最底层之后再往上一步一步new（有点像深度优先遍历）：
 
-<img src="/Users/captain/study for myself/Java 笔记/Notes/image/IocExample4.jpg" alt="IocExample4" style="zoom: 33%;" />
+<img src="./image/IocExample4.jpg" alt="IocExample4" style="zoom: 33%;" />
 
 
 
 Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
 
+在之后就是spring的AOP。系统由许多不同的组件组成，每一个组件各负责一块特定模块，除了实现核心功能外，还要实现额外的职责，像日志、事务管理和安全这些系统服务经常融入到具有核心业务逻辑的组件中去，这些系统服务往往称为横向关注点，因为它会横跨系统的多个组件。
+
+如果将关注点分散到多个组件中去，组件会因为那些与自身核心业务无关的代码而变得混乱，即是封装成方法模块来调用，但还是会重复的出现在各个模块中。
+
+借助AOP，可以使用各种功能层去包裹核心业务层，可以实现它们所包装bean相同接口的代理。
+
+最基本的概念就是**连接点 、切点、通知以及切面**，如果说通知定义了切面的“什么”的话，那么“切点”定义了何处，切点的定义会匹配通知所要织入的一个或多个连接点。
+
+Spring AOP构建在**动态代理**基础之上，在运行时通知对象，因此Spring对AOP的支持局限于**方法拦截**。如果AOP需求超过了简单的方法调用（如构造器或者属性拦截），则需要考虑AspectJ来实现切面。
+
+Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@AfterThrowing、@Around、@Before，一般都是结合@Pointcut来实现，但此时还是个Spring容器里的一个bean，还不会解析，也不会为其创建将其转换为切面的代理，还需要使用@EnableAspectJ-Autoproxy注解来启动**自动代理**。至于@Around比较特殊，需要结合ProceedingJoinPoint对象。
+
+<img src="./image/aop代理模型.png" alt="aop代理模型" style="zoom: 50%;" />
+
 bean的生命周期
 
-<img src="/Users/captain/study for myself/Java 笔记/Notes/image/bean生命周期.png" alt="bean生命周期" style="zoom:50%;" />
+<img src="./image/bean生命周期.png" alt="bean生命周期" style="zoom:50%;" />
 
 1、Spring对bean进行实例化;
 
