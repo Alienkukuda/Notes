@@ -4,9 +4,11 @@
 
 关键词：注入、ioc容器、解耦 
 
+#### 控制反转
+
 <img src="./image/IOC大纲.png" alt="ioc大纲" style="zoom: 33%;" />
 
-用一句话解释就是**控制反转** 就是依赖倒置原则的一种代码设计的思路。具体采用的方法就是所谓的**依赖注入**。
+用一句话解释就是**控制反转** 是依赖倒置原则的一种代码设计的思路。具体采用的方法就是所谓的**依赖注入**。
 
 <img src="./image/IocExample1.jpg" alt="IocExample1" style="zoom:25%;" />
 
@@ -26,9 +28,7 @@ IoC Container的第二个好处是：**我们在创建实例的时候不需要�
 
 <img src="./image/IocExample4.jpg" alt="IocExample4" style="zoom: 33%;" />
 
-
-
-Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
+#### SpringAOP切面编程
 
 在之后就是spring的AOP。系统由许多不同的组件组成，每一个组件各负责一块特定模块，除了实现核心功能外，还要实现额外的职责，像日志、事务管理和安全这些系统服务经常融入到具有核心业务逻辑的组件中去，这些系统服务往往称为横向关注点，因为它会横跨系统的多个组件。
 
@@ -44,7 +44,13 @@ Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@Aft
 
 <img src="./image/aop代理模型.png" alt="aop代理模型" style="zoom: 50%;" />
 
-bean的生命周期
+### spring装配知识点
+
+#### spring容器类型
+
+Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
+
+#### bean的生命周期
 
 <img src="./image/bean生命周期.png" alt="bean生命周期" style="zoom:50%;" />
 
@@ -67,3 +73,16 @@ bean的生命周期
 9.此时，bean已经准备就绪，可以被应用程序使用了，它们将一直驻留在应用上下文中，直到该应用上下文被销毁;
 
 10.如果bean实现了DisposableBean接口，Spring将调用它的destroy()接口方法。同样，如果bean使用destroy-method声明了销毁方法，该方法也会被调用。
+
+#### bean的加载过程
+
+容器的初始化
+
+- 资源的定位，就是定位你配置的xml文件
+- 对resource文件进行解析，解析成spring 定义的BeanDefinition
+- 对BeanDefinition 进行注册，其实就相当于把BeanDefinition 放到一个HashMap
+
+依赖的注入：
+
+- 根据BeanDefinition创建Bean实例
+- 为Bean注入依赖的实例
