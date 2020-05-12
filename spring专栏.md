@@ -44,13 +44,27 @@ Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@Aft
 
 <img src="./image/aop代理模型.png" alt="aop代理模型" style="zoom: 50%;" />
 
-### spring装配知识点
+##### 比较 SpringAOP 、AspectJ
 
-#### spring容器类型
+在这之前要知道AOP概念是两者都必要的术语。
+
+简而言之，Spring AOP和AspectJ有不同的目标。
+
+Spring AOP旨在通过Spring IoC提供一个简单的AOP实现，这并不是完整的AOP解决方案，它只能用于Spring容器管理的beans。另一方面，AspectJ是最原始的AOP实现技术，提供了完整的AOP解决方案。AspectJ更为健壮，相对于Spring AOP也显得更为复杂。值得注意的是，AspectJ能够被应用于所有的领域对象。
+
+AspectJ and Spring AOP使用了不同的织入方式，AspectJ使用了三种不同类型的织入：编译时织入、编译后织入、加载时织入，Spring AOP利用的是运行时织入（使用JDK动态代理或者CGLIB代理）。
+
+<img src="./image/springAOP的两种代理.png" style="zoom:50%;" />
+
+同样值得注意的是，Spring AOP基于代理模式，因此，它需要目标类的子类，只支持执行方法的连接点，切面不适用于同一个类中调用的方法。这很显然，当我们在同一个类中调用一个方法时，我们并没有调用Spring AOP提供的代理的方法。如果我们需要这个功能，可以在不同的beans中定义一个独立的方法，或者使用AspectJ。
+
+#### spring装配知识点
+
+##### spring容器类型
 
 Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
 
-#### bean的生命周期
+##### bean的生命周期
 
 <img src="./image/bean生命周期.png" alt="bean生命周期" style="zoom:50%;" />
 
@@ -74,7 +88,7 @@ Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和
 
 10.如果bean实现了DisposableBean接口，Spring将调用它的destroy()接口方法。同样，如果bean使用destroy-method声明了销毁方法，该方法也会被调用。
 
-#### bean的加载过程
+##### bean的加载过程
 
 容器的初始化
 
