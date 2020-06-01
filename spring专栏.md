@@ -4,7 +4,7 @@
 
 关键词：注入、ioc容器、解耦 
 
-#### 控制反转
+#### 控制反转（IoC）
 
 <img src="./image/IOC大纲.png" alt="ioc大纲" style="zoom: 33%;" />
 
@@ -50,15 +50,85 @@ Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@Aft
 
 简而言之，Spring AOP和AspectJ有不同的目标。
 
-Spring AOP旨在通过Spring IoC提供一个简单的AOP实现，这并不是完整的AOP解决方案，它只能用于Spring容器管理的beans。另一方面，AspectJ是最原始的AOP实现技术，提供了完整的AOP解决方案。AspectJ更为健壮，相对于Spring AOP也显得更为复杂。值得注意的是，AspectJ能够被应用于所有的领域对象。
+Spring AOP旨在通过Spring IoC提供一个简单的AOP实现，这并不是完整的AOP解决方案，它只能用于Spring容器管理的beans。另一方面，AspectJ是最原始的AOP实现技术，基于字节码操作，提供了完整的AOP解决方案。AspectJ更为健壮，相对于Spring AOP也显得更为复杂。值得注意的是，AspectJ能够被应用于所有的领域对象。
 
 AspectJ and Spring AOP使用了不同的织入方式，AspectJ使用了三种不同类型的织入：编译时织入、编译后织入、加载时织入，Spring AOP利用的是运行时织入（使用JDK动态代理或者CGLIB代理）。
 
 <img src="./image/springAOP的两种代理.png" style="zoom:50%;" />
 
-同样值得注意的是，Spring AOP基于代理模式，因此，它需要目标类的子类，只支持执行方法的连接点，切面不适用于同一个类中调用的方法。这很显然，当我们在同一个类中调用一个方法时，我们并没有调用Spring AOP提供的代理的方法。如果我们需要这个功能，可以在不同的beans中定义一个独立的方法，或者使用AspectJ。
+同样值得注意的是，Spring AOP基于代理模式，因此，它需要目标类的子类，只支持执行方法的连接点，然而，AspectJ在运行前将横切关注点直接织入实际的代码中，因此也支持其他许多连接点。在SpringAOP中，切面不适用于同一个类中调用的方法，这很显然，当我们在同一个类中调用一个方法时，我们并没有调用Spring AOP提供的代理的方法。如果我们需要这个功能，可以在不同的beans中定义一个独立的方法，或者使用AspectJ。
+
+[springAOP和AspectJ](https://juejin.im/post/5a695b3cf265da3e47449471)
+
+#### SpringMVC的请求响应模型
+
+<img src="./image/SpringMVC请求响应流程图.jpg" alt="SpringMVC请求响应流程图" style="zoom: 67%;" />
+
+客户端发出http请求，如果匹配到DispatcherServlet的请求路径就交给DispatcherServlet，DispatcherServlet收到后根据请求信息和HandlerMapping找到处理请求的Handler，再由具体的HandlerAdapter对Handler进行具体的调用，处理完返回ModelAndView对象，通过ViewResolver将逻辑视图转化为真正的视图View。
 
 #### spring装配知识点
+
+##### Spring IOC容器的初始化
+
+IoC容器的初始化就是含有BeanDefinition信息的Resource的定位、载入、解析、注册四个过程。
+
+第一过程是Resource定位过程，它由ResourceLoader通过统一的Resource接口来完成；
+
+第二过程是BeanDefinition的载入过程，该载入过程把用户定义好的Bean表示成IoC容器内部的数据结构；
+
+第三个过程是向IOC容器注册这些BeanDefinition的过程，这个过程是通过调用BeanDefinitionRegistry接口的实现来完成，Ioc容器是通过这个HashMap来持有这些BeanDefinition数据的。
+
+这里BeanDefinition是容器中的领域对象，可以看成bean的抽象，并不涉及bean的依赖注入，IOC容器的初始化只是bean定义的载入。其中**refresh()**启动对Ioc容器的初始化。
+
+refresh方法在AbstractApplicationContext中，AbstractApplicationContext继承ApplicationContext，ApplicationContext继承BeanFactory，AbstractApplicationContext（FileSystemXmlApplicationContext、ClassPathXmlApplicationContext、AnnotationConfigApplicationContext）三个类。
+
+关于**refresh()**涉及到的源码过多，这里只显示大纲。
+
+```Java
+@Override
+public void refresh() throws BeansException, IllegalStateException {
+   // 来个锁，不然 refresh() 还没结束，你又来个启动或销毁容器的操作，那不就乱套了嘛
+   synchronized (this.startupShutdownMonitor) {
+
+      // 准备工作，记录下容器的启动时间、标记“已启动”状态、处理配置文件中的占位符
+      prepareRefresh();
+
+      // 这步比较关键，这步完成后，配置文件就会解析成一个个 Bean 定义，注册到 BeanFactory 中，
+      // 当然，这里说的 Bean 还没有初始化，只是配置信息都提取出来了，
+      // 注册也只是将这些信息都保存到了注册中心(说到底核心是一个 beanName-> beanDefinition 的 map)
+      ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+      // 设置 BeanFactory 的类加载器，添加几个 BeanPostProcessor，手动注册几个特殊的 bean
+      // 这块待会会展开说
+      prepareBeanFactory(beanFactory);
+
+      try {
+         // 【这里需要知道 BeanFactoryPostProcessor 这个知识点，Bean 如果实现了此接口，
+         // 那么在容器初始化以后，Spring 会负责调用里面的 postProcessBeanFactory 方法。】
+
+         // 这里是提供给子类的扩展点，到这里的时候，所有的 Bean 都加载、注册完成了，但是都还没有初始化
+         // 具体的子类可以在这步的时候添加一些特殊的 BeanFactoryPostProcessor 的实现类或做点什么事
+         postProcessBeanFactory(beanFactory);
+         // 调用 BeanFactoryPostProcessor 各个实现类的 postProcessBeanFactory(factory) 方法
+         invokeBeanFactoryPostProcessors(beanFactory);
+        --------------------------------------------------------------------------------
+
+         // 注册 BeanPostProcessor 的实现类，注意看和 BeanFactoryPostProcessor 的区别
+         // 此接口两个方法: postProcessBeforeInitialization 和 postProcessAfterInitialization
+         // 两个方法分别在 Bean 初始化之前和初始化之后得到执行。注意，到这里 Bean 还没初始化
+         registerBeanPostProcessors(beanFactory);
+
+         //省略....
+        --------------------------------------------------------------------------------
+         // 重点，重点，重点
+         // 初始化所有的 singleton beans
+         //（lazy-init 的除外）
+         finishBeanFactoryInitialization(beanFactory);
+
+     //省略....
+   }
+}
+```
 
 ##### spring容器类型
 
@@ -88,15 +158,19 @@ Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和
 
 10.如果bean实现了DisposableBean接口，Spring将调用它的destroy()接口方法。同样，如果bean使用destroy-method声明了销毁方法，该方法也会被调用。
 
-##### bean的加载过程
+#### spring事务
 
-容器的初始化
+##### 管理事务的方式
 
-- 资源的定位，就是定位你配置的xml文件
-- 对resource文件进行解析，解析成spring 定义的BeanDefinition
-- 对BeanDefinition 进行注册，其实就相当于把BeanDefinition 放到一个HashMap
+编程式事务和声明式事务（xml和注解）。
 
-依赖的注入：
+##### 隔离级别
 
-- 根据BeanDefinition创建Bean实例
-- 为Bean注入依赖的实例
+与mysql事级别一致不在展开，无非是写的时候不能读->读的时候不能写->写的时候不能写，个人理解。
+
+##### 事务传播
+
+不记名称，有事务则加入事务，没事务则创建事务；有事务则加入事务，没事务不用事务方式运行；有事务则加入事务，没事务报异常；创建一个新的事务，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则抛出异常。
+
+
+
