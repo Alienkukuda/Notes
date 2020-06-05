@@ -24,7 +24,7 @@ IoC Container的第二个好处是：**我们在创建实例的时候不需要�
 
 <img src="./image/IocExample3.jpg" alt="IocExample3" style="zoom: 25%;" />
 
-而IoC Container在进行这个工作的时候是反过来的，它先从最上层开始往下找依赖关系，到达最底层之后再往上一步一步new（有点像深度优先遍历）：
+而IoC Container在进行这个工作的时候是反过来的，它先从最上层开始往下找依赖关系，到达最底层之后再往上一步一步new（有点像深度优先遍历和双亲委派模型）：
 
 <img src="./image/IocExample4.jpg" alt="IocExample4" style="zoom: 33%;" />
 
@@ -37,8 +37,6 @@ IoC Container的第二个好处是：**我们在创建实例的时候不需要�
 借助AOP，可以使用各种功能层去包裹核心业务层，可以实现它们所包装bean相同接口的代理。
 
 最基本的概念就是**连接点 、切点、通知以及切面**，如果说通知定义了切面的“什么”的话，那么“切点”定义了何处，切点的定义会匹配通知所要织入的一个或多个连接点。
-
-Spring AOP构建在**动态代理**基础之上，在运行时通知对象，因此Spring对AOP的支持局限于**方法拦截**。如果AOP需求超过了简单的方法调用（如构造器或者属性拦截），则需要考虑AspectJ来实现切面。
 
 Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@AfterThrowing、@Around、@Before，一般都是结合@Pointcut来实现，但此时还是个Spring容器里的一个bean，还不会解析，也不会为其创建将其转换为切面的代理，还需要使用@EnableAspectJ-Autoproxy注解来启动**自动代理**。至于@Around比较特殊，需要结合ProceedingJoinPoint对象。
 
@@ -56,7 +54,9 @@ AspectJ and Spring AOP使用了不同的织入方式，AspectJ使用了三种不
 
 <img src="./image/springAOP的两种代理.png" style="zoom:50%;" />
 
-同样值得注意的是，Spring AOP基于代理模式，因此，它需要目标类的子类，只支持执行方法的连接点，然而，AspectJ在运行前将横切关注点直接织入实际的代码中，因此也支持其他许多连接点。在SpringAOP中，切面不适用于同一个类中调用的方法，这很显然，当我们在同一个类中调用一个方法时，我们并没有调用Spring AOP提供的代理的方法。如果我们需要这个功能，可以在不同的beans中定义一个独立的方法，或者使用AspectJ。
+Spring AOP构建在**动态代理**基础之上，在运行时通知对象，因此Spring对AOP的支持局限于**方法拦截**。如果AOP需求超过了简单的方法调用（如构造器或者属性拦截），则需要考虑AspectJ来实现切面，因为AspectJ在运行前将横切关注点直接织入实际的代码中，因此也支持其他许多连接点。
+
+同样值得注意的是，在SpringAOP中，切面不适用于同一个类中调用的方法，这很显然，当我们在同一个类中调用一个方法时，我们并没有调用Spring AOP提供的代理的方法。如果我们需要这个功能，可以在不同的beans中定义一个独立的方法，或者使用AspectJ。
 
 [springAOP和AspectJ](https://juejin.im/post/5a695b3cf265da3e47449471)
 
@@ -94,20 +94,18 @@ public void refresh() throws BeansException, IllegalStateException {
       prepareRefresh();
 
       // 这步比较关键，这步完成后，配置文件就会解析成一个个 Bean 定义，注册到 BeanFactory 中，
-      // 当然，这里说的 Bean 还没有初始化，只是配置信息都提取出来了，
       // 注册也只是将这些信息都保存到了注册中心(说到底核心是一个 beanName-> beanDefinition 的 map)
       ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
       // 设置 BeanFactory 的类加载器，添加几个 BeanPostProcessor，手动注册几个特殊的 bean
-      // 这块待会会展开说
       prepareBeanFactory(beanFactory);
 
       try {
          // 【这里需要知道 BeanFactoryPostProcessor 这个知识点，Bean 如果实现了此接口，
          // 那么在容器初始化以后，Spring 会负责调用里面的 postProcessBeanFactory 方法。】
-
          // 这里是提供给子类的扩展点，到这里的时候，所有的 Bean 都加载、注册完成了，但是都还没有初始化
-         // 具体的子类可以在这步的时候添加一些特殊的 BeanFactoryPostProcessor 的实现类或做点什么事
+        
+         // 说白了就是添加修改BeanFactory的入口，也就是是beanFactory的后置处理器，进行可扩展用的，进行覆盖或添加
          postProcessBeanFactory(beanFactory);
          // 调用 BeanFactoryPostProcessor 各个实现类的 postProcessBeanFactory(factory) 方法
          invokeBeanFactoryPostProcessors(beanFactory);
@@ -138,15 +136,17 @@ Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和
 
 <img src="./image/bean生命周期.png" alt="bean生命周期" style="zoom:50%;" />
 
-1、Spring对bean进行实例化;
+1、Spring通过构造函数或工厂方法对bean进行实例化;
 
-2、Spring将值和bean的引用注入到bean对应的属性中;
+2、设置属性值值和对其它bean的引用;
 
 3、如果bean实现了BeanNameAware接口，Spring将bean的ID传递给setBeanName()方法;
 
 4.如果bean实现了BeanFactoryAware接口，Spring将调用setBeanFactory()方法，将BeanFactory容器实例传入;
 
 5.如果bean实现了ApplicationContextAware接口，Spring将调用setApplicationContext ()方法，将bean所在的应用上下文的引用传入进来;
+
+总结成：调用所有`*Aware`接口中定义的`setter`方法
 
 6.如果bean实现了BeanPostProcessor接口，Spring将调用它们的post-ProcessBeforeInitialization()方法;
 
@@ -164,13 +164,15 @@ Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和
 
 编程式事务和声明式事务（xml和注解）。
 
+Spring 并不直接对事务进行管理，而是通过事务管理器接口 `PlatformTransactionManager`将事务职责委托给不同的 ORM 框架的事务来实现。
+
 ##### 隔离级别
 
 与mysql事级别一致不在展开，无非是写的时候不能读->读的时候不能写->写的时候不能写，个人理解。
 
 ##### 事务传播
 
-不记名称，有事务则加入事务，没事务则创建事务；有事务则加入事务，没事务不用事务方式运行；有事务则加入事务，没事务报异常；创建一个新的事务，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则抛出异常。
+不记名称，有事务则加入事务，没事务则创建事务；有事务则加入事务，没事务不用事务方式运行；有事务则加入事务，没事务报异常；创建新事务，无论当前存不存在事务，都创建新事务；以非事务方式运行，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则抛出异常。
 
 
 
