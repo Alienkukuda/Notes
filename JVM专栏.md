@@ -121,15 +121,17 @@ Java 程序中的 new 操作会转换为 Class 文件中方法的 new 字节指�
 
 适合存活率高的情况        
 
-JVM调优
+#### JVM调优
+
+jps查看虚拟机进程、jstat查看虚拟机各方面的运行数据、jmap生成堆转储快照、jstack虚拟机的线程快照。
+
+举个例子，项目里要用到大量的NIO操作，xms和xmx设置的一样，用来防止变化，设置大了，直接内存就小了，抛出异常。
 
 #### 小结
 
 虽然有回收机制，但也会出现内存泄露的问题，例如Hashmap、Vector的静态使用，数据库连接未关闭······
 
 [回收机制大纲](https://juejin.im/post/5b85ea54e51d4538dd08f601)
-
-[G2和cms收集器详谈](http://blog.chriscs.com/2017/06/20/g1-vs-cms/)
 
 [G2和cms收集器浅谈](https://blog.csdn.net/huanbia/article/details/75581423)
 

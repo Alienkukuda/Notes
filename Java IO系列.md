@@ -56,6 +56,14 @@ Java NIO的选择器允许一个单独的线程来监视多个输入通道，你
 2. Acceptor（Handler的一种） 处理客户端新连接，并分派请求到处理器链中
 3. Handlers 执行非阻塞读/写 任务
 
+reactor模型结合netty的实现更好理解
+
+```java
+ serverBootstrap.group(xxx)
+                .channel(xxx)
+                .childHandler(xxx)
+```
+
 至于Reactor 单线程模型、单 Reactor 多线程模型、主从 Reactor 多线程模型无非就是IO读写是否多线程、连接是否多线程。
 
 #### Select、poll、epoll

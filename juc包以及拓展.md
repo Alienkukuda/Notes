@@ -86,7 +86,7 @@ public final int getAndAddInt(Object var1, long var2, int var4) {
    public static void main(String[] args) {
            String str1 = "aaa";
            String str2 = "bbb";
-           AtomicStampedReference<String> reference = new AtomicStampedReference<String>		(str1,1);
+           AtomicStampedReference<String> reference = new AtomicStampedReference<String>(str1,1);
            reference.compareAndSet(str1,str2,reference.getStamp(),reference.getStamp()+1);
            System.out.println("reference.getReference() = " + reference.getReference());
    

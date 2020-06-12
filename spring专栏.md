@@ -128,7 +128,7 @@ public void refresh() throws BeansException, IllegalStateException {
 }
 ```
 
-##### spring容器类型
+##### Spring容器类型
 
 Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
 
@@ -173,6 +173,20 @@ Spring 并不直接对事务进行管理，而是通过事务管理器接口 `Pl
 ##### 事务传播
 
 不记名称，有事务则加入事务，没事务则创建事务；有事务则加入事务，没事务不用事务方式运行；有事务则加入事务，没事务报异常；创建新事务，无论当前存不存在事务，都创建新事务；以非事务方式运行，如果当前存在事务，则把当前事务挂起；以非事务方式运行，如果当前存在事务，则抛出异常。
+
+#### Spring其它知识点
+
+##### 三级缓存解决循环依赖
+
+1. `singletonObjects`：用于存放完全初始化好的 bean，**从该缓存中取出的 bean 可以直接使用**
+2. `earlySingletonObjects`：提前曝光的单例对象的cache，存放原始的 bean 对象（尚未填充属性），用于解决循环依赖
+3. `singletonFactories`：单例对象工厂的cache，存放 bean 工厂对象，用于解决循环依赖
+
+先从一级缓存中获取，如果获取不到或者对象正在创建中，那就从二级缓存中获取，如果还是获取不到，就从`三级缓存singletonFactory`.getObject()获取。如果获取到就从三级缓存移到二级缓存。`addSingleton、addSingletonFactory、removeSingleton`从语义中可以看出添加单例、添加单例工厂`ObjectFactory`的时候都会删除二级缓存里面对应的缓存值，是互斥的。
+
+##### dao接口与xml建立联系
+
+mapperscan会扫描包将其下接口都注入进mapperregistery的hashmap中，class为key，对应的factorybean为value，实际上是调用bean的getObject方法和获取到proxy，再使用invoke方法。
 
 
 
