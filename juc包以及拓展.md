@@ -15,9 +15,18 @@
 
 有四个比较重要的内部类：**TreeBin**（引用）、**TreeNode**（存储数据的节点）、**ForwardingNode**（扩容时使用，指向nextTable）、**ReservationNode**（占位节点，插入之前防止slot被其它线程抢占），都继承自Node，Node又继承自Map.Entry。
 
-![concurrentHashMap的存储元素类型](./image/concurrentHashMap的存储元素类型.png)
+![concurrentHashMap的存储元素类型](./image/concurrentHashMap的存储元素类型.png)4
 
 在链表转化为红黑树过程中，用同步块锁住当前slot的首元素，防止其它线程增删改查，完成后利用cas替换原有链表。
+
+put操作
+
+1. 如果没有初始化就先调用initTable（）方法来进行初始化过程
+2. 如果没有hash冲突就直接CAS插入
+3. 如果还在进行扩容操作就先进行扩容
+4. 如果存在hash冲突，就加锁来保证线程安全，这里有两种情况，一种是链表形式就直接遍历到尾端插入，一种是红黑树就按照红黑树结构插入，
+5. 最后一个如果该链表的数量大于阈值8，就要先转换成黑红树的结构，break再一次进入循环
+6. 如果添加成功就调用addCount（）方法统计size，并且检查是否需要扩容
 
 #### CAS（compareAndSet）
 
@@ -111,7 +120,7 @@ public final int getAndAddInt(Object var1, long var2, int var4) {
 
 与 `synchronized` 不再做详细的对比，相比`synchronized`有获取锁与释放锁的可操作性，可中断、超时获取锁`ReentrantLock` 是实现了`Lock`接口的一个类，支持重入性，表示能够对共享资源能够重复加锁，即当前线程获取该锁再次获取不会被阻塞，`synchronized` 提供了便捷性的隐式获取锁释放锁机制（基于JVM机制），具体叫**ACC_SYNCHRONIZED**标记符。
 
-想要支持重入性锁，要解决两个问题：**1.在线程获取锁时，如果已经获取锁的线程是当前线程的话直接在此获取成功；2.由于锁会被获取n次，只有在释放n次后才能算完全获取成功。**很重要的一点是，要理解其中的`Syn`内部类它继承自`AQS`，无论是获取还是释放，都要对`state`进行操作。对于第一个问题，以非公平锁为例，核心方法为`nonfairTryAcquire`：
+想要支持重入性锁，要解决两个问题：**1.在线程获取锁时，如果已经获取锁的线程是当前线程的话直接在此获取成功；2.由于锁会被获取n次，只有在释放n次后才能算完全获取成功。**很重要的一点是，要理解其中的`Sync`内部类它继承自`AQS`，无论是获取还是释放，都要对`state`进行操作。对于第一个问题，以非公平锁为例，核心方法为`nonfairTryAcquire`：
 
 ```Java
 final boolean nonfairTryAcquire(int acquires) {
@@ -354,7 +363,7 @@ public interface Future<V> {
 
 > 每当一个线程完成了自己的任务后，调用 countDown() 方法会让计数器的值就会减1。当计数器值到达0时，它表示所有的线程已经完成了任务，那些因为调用 await() 方法而在等待的线程就会被唤醒。
 
-开头就说明一下，`CountDownLatch`通过`AQS`里面的**共享锁**来实现的，`Syn`内部类它继承自`AQS`，中重写了`tryAcquireShared`和`tryReleaseShared`。`ReentrantLock`也是使用`AQS`。
+开头就说明一下，`CountDownLatch`通过`AQS`里面的**共享锁**来实现的，`Sync`内部类它继承自`AQS`，中重写了`tryAcquireShared`和`tryReleaseShared`。`ReentrantLock`也是使用`AQS`。
 
 有几个**API**：
 
@@ -519,7 +528,7 @@ public class ReentrantReadWriteLock
 }
 ```
 
-`ReentrantReadWriteLock`中包含了下面三个对象：`sync`，读锁`readerLock`和写锁`writerLock`。读锁`ReadLock`和写锁`WriteLock`都实现了`Lock`接口。读锁`ReadLock`和写锁`WriteLock`中也都分别包含了"Sync对象"，它们的`Sync`对象和`ReentrantReadWriteLock`的`Sync`对象 是一样的，就是通过`sync`，读锁和写锁实现了对同一个对象的访问。
+`ReentrantReadWriteLock`中包含了下面三个对象：`sync`，读锁`readerLock`和写锁`writerLock`。读锁`ReadLock`和写锁`WriteLock`都实现了`Lock`接口。读锁`ReadLock`和写锁`WriteLock`中也都分别包含了"Sync对象"，它们的`Sync`对象和`ReentrantReadWriteLock`的`Sync`对象是一样的，就是通过`sync`，读锁和写锁实现了对同一个对象的访问。
 
 看过`ReadWriteLock`接口的都知道，其只有两个方法：`writeLock`和`readLock`，拿写锁的实现为例：
 
@@ -590,7 +599,7 @@ static int exclusiveCount(int c) { return c & EXCLUSIVE_MASK; }
 
 写锁的`tryAcquire`方法`和ReentrantLock`的`tryAcquire(int)`方法大致一样，只不过在判断重入时增加了一个读锁是否存在的判断。因为要确保写锁的操作对读锁是可见的。
 
-读锁的`tryAcquireShared`方法相对来说比较复杂，因为多个线程可以公用，简单叙述下过程，由于它可以锁降级，他会`exclusiveCount(c)`判断是否需要降级，然后判断是否第一次被线程获取，是否被第一次后去的线程重复获取，都不是则更新`HoldCounter`(包含了线程持有共享锁的数量和线程的id)，最后调用`fullTryAcquireShared(current)`循环重试，然后根据“是否需要阻塞等待”，“读锁状态是否超过限制”等进行处理。
+读锁的`tryAcquireShared`方法相对来说比较复杂，因为多个线程可以公用，简单叙述下过程，由于它可以锁降级，他会`exclusiveCount(c)`判断是否需要降级，然后判断是否第一次被线程获取，是否被第一次获取的线程重复获取，都不是则更新`HoldCounter`(包含了线程持有共享锁的数量和线程的id)，最后调用`fullTryAcquireShared(current)`循环重试，然后根据“是否需要阻塞等待”，“读锁状态是否超过限制”等进行处理。
 
 还有就是个**锁降级**，就是写锁降级为读锁，但是需要遵循先获取写锁、获取读锁在释放写锁的次序，还是看官方的 实例代码吧，虽然不知道为什么他获取读锁是什么意思：
 
@@ -628,4 +637,18 @@ public void processData() {
 ```
 
 在上述代码中，当数据发生变化后，update变量（布尔volatile类型）被设置为false。最后提一下，JDK1.8提出的`StampedLock`优化了读写锁，[康康源码](https://juejin.im/entry/5b28a4c46fb9a00e8a3e534a)
+
+#### CopyOnWriteArrayList(COW奶牛家族)
+
+CopyOnWrite容器即写时复制的容器。通俗的理解是当我们往一个容器添加元素的时候，不直接往当前容器添加，而是先将当前容器进行Copy，复制出一个新的容器，然后新的容器里添加元素，添加完元素之后，再将原容器的引用指向新的容器。这样做的好处是我们可以对CopyOnWrite容器进行并发的读，而不需要加锁，因为当前容器不会添加任何元素。所以CopyOnWrite容器也是一种读写分离的思想，读和写不同的容器。
+
+读的时候不需要加锁，如果读的时候有多个线程正在向ArrayList添加数据，读还是会读到旧的数据，因为写的时候不会锁住旧的ArrayList。
+
+对于它的使用场景，白名单，黑名单这种读多写少的场景会用到，但是使用CopyOnWriteArrayList需要注意两件事情：
+
+1. 减少扩容开销。根据实际需要，初始化CopyOnWriteList的大小，避免写时CopyOnWriteList扩容的开销。
+
+2. 使用批量添加。因为每次添加，容器每次都会进行复制，所以减少添加次数，可以减少容器的复制次数。
+
+
 

@@ -33,5 +33,7 @@ redis持久化机制：RDB快照和AOF日志。rdb原理是对redis中的数据�
 
 Redis集群有`16384`个哈希槽`(hash slot)`,每个`key`通过`CRC16`校验后对`16384`取模来决定放置哪个槽.集群的每个节点负责一部分hash slot，查找时候也是这样，至于迁移则将部分槽转移就行。
 
+redis还有什么使用方法，自己理解：redis可以用String数据存储类型对String进行添加等操作，实现计时器，zset延时任务，消息队列，分布式锁。[具体地址](https://juejin.im/post/5caf45b96fb9a0688b573d6c)
+
 使用redis实现分布式锁，set覆盖原值，setnx不覆盖，setex设置超时时间，会出现长生不老、误删等问题，不适合做分布式锁。
 

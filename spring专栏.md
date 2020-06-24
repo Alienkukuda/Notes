@@ -34,7 +34,7 @@ IoC Container的第二个好处是：**我们在创建实例的时候不需要�
 
 如果将关注点分散到多个组件中去，组件会因为那些与自身核心业务无关的代码而变得混乱，即是封装成方法模块来调用，但还是会重复的出现在各个模块中。
 
-借助AOP，可以使用各种功能层去包裹核心业务层，可以实现它们所包装bean相同接口的代理。
+借助AOP，可以使用各种功能层去包裹核心业务层，可以实现它们**所包装bean相同接口的代理**。
 
 最基本的概念就是**连接点 、切点、通知以及切面**，如果说通知定义了切面的“什么”的话，那么“切点”定义了何处，切点的定义会匹配通知所要织入的一个或多个连接点。
 
@@ -48,7 +48,7 @@ Spring使用AspectJ注解来声明通知方法，@After、@AfterReturning、@Aft
 
 简而言之，Spring AOP和AspectJ有不同的目标。
 
-Spring AOP旨在通过Spring IoC提供一个简单的AOP实现，这并不是完整的AOP解决方案，它只能用于Spring容器管理的beans。另一方面，AspectJ是最原始的AOP实现技术，基于字节码操作，提供了完整的AOP解决方案。AspectJ更为健壮，相对于Spring AOP也显得更为复杂。值得注意的是，AspectJ能够被应用于所有的领域对象。
+Spring aop 旨在提供一个跨 Spring IoC 的简单的 aop 实现，这并不是完整的AOP解决方案，它只能用于Spring容器管理的beans。另一方面，AspectJ是最原始的AOP实现技术，基于字节码操作，提供了完整的AOP解决方案。AspectJ更为健壮，相对于Spring AOP也显得更为复杂。值得注意的是，AspectJ能够被应用于所有的领域对象。
 
 AspectJ and Spring AOP使用了不同的织入方式，AspectJ使用了三种不同类型的织入：编译时织入、编译后织入、加载时织入，Spring AOP利用的是运行时织入（使用JDK动态代理或者CGLIB代理）。
 
@@ -130,7 +130,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 ##### Spring容器类型
 
-Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean 。
+Spring容器并不是只有一个，可以分为两种类型：**bean工厂**和**应用上下文**，BeanFactory仅提供了最基本的依赖注入支持，无法支持spring插件，而ApplicationContext基于BeanFactory构建，扩展了BeanFactory，容器启动的时候，不管你用没用到，一次性创建所有 bean，BeanFactory则只会在getbean时候实例化 。
 
 ##### bean的生命周期
 
@@ -187,6 +187,12 @@ Spring 并不直接对事务进行管理，而是通过事务管理器接口 `Pl
 ##### dao接口与xml建立联系
 
 mapperscan会扫描包将其下接口都注入进mapperregistery的hashmap中，class为key，对应的factorybean为value，实际上是调用bean的getObject方法和获取到proxy，再使用invoke方法。
+
+##### factoryBean和beanFactory
+
+FactoryBean 可以看做一个工厂，用它来创建一些复杂的 bean，如果某个 bean 实现了这个接口，通过 getBean 方法来获取 bean 的时候，并不是返回自己的实例，而是返回其 getObject() 方法的返回值
+
+BeanFactory 定义了 Spring 容器基本的功能，交由子类去实现，用于管理 bean
 
 
 
